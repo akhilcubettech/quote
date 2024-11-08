@@ -20,33 +20,35 @@ class QuoteAgent:
     def generate_quote(self, state: dict):
         requirements = state['requirements']
         products = state['products']
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", '''You are an AI quote generator designed to create highly professional quotations based on a provided requirements and results information. 
-           Analyze the requirements and products, identify any relevant information like price quantity etc, and use those to create a quote for the requirements.
 
-           Your output should follow this exact JSON structure:
-    [
-    
-    {{
-        "product_id": str,    # ID of the product
-        "product_name": str,  # Name of the product
-        "product_price": 289.00, # Price of the product
-        "quantity": int , # Quantity of product from requirements
-        "sub_total: float, # Total Price per item (quantity * product_price)
-    }},
-    {{
-        "product_id": str,    # ID of the product
-        "product_name": str,  # Name of the product
-        "product_price": 289.00, # Price of the product
-        "quantity": int , # Quantity of product from requirements
-        "sub_total: float, # Total Price per item (quantity * product_price)
-    }}
-    
-    ]
-    '''),
-            ("human", "===Requirements:\n{requirements}\n\n===Results:\n{results}\n\nGenerate a list of items for quote:")])
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", '''You are an AI quote generator designed to create highly professional quotations based on provided requirements and results information. 
+            Analyze the requirements and products, identify any relevant information like price, quantity, etc., and use those to create a quote for the requirements.
+
+            Your output should follow this exact JSON structure:
+            [
+                {{
+                    "product_id": str,            // ID of the product
+                    "product_name": str,          // Name of the product
+                    "product_price": float,        // Price of the product
+                    "quantity": int,              // Quantity of product from requirements
+                    "sub_total": float           // Total Price per item (quantity * product_price)
+                }},
+                {{
+                    "product_id": str,           
+                    "product_name": str,          
+                    "product_price": float,        
+                    "quantity": int,              
+                    "sub_total": float            
+                }}
+            ]
+            '''),
+            ("human",
+             "===Requirements:\n{requirements}\n\n===Results:\n{results}\n\nGenerate a list of items for the quote:")
+        ])
 
         output_parser = JsonOutputParser()
-        response = self.llm_manager.invoke(prompt, requirements=requirements, results=products )
+        response = self.llm_manager.invoke(prompt, requirements=requirements, results=products)
         items = output_parser.parse(response)
+
         return {"items": items}

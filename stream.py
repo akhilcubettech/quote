@@ -10,8 +10,8 @@ import base64
 agent= WorkflowManager()
 
 def process_text_input(req: str):
-    # res = agent.run_text(req)
-    return req
+    res = agent.run_text(req)
+    return res
 
 
 def process_file_upload(file):
@@ -36,9 +36,9 @@ def process_file_upload(file):
             }
         ],
     )
-    print(response.choices[0].message.content)
-    # res = agent.run_text(response)
-    return response.choices[0].message.content
+
+    res = agent.run_text(response.choices[0].message.content)
+    return res
 
 
 st.title("Quote Generator")
@@ -65,36 +65,34 @@ with results_container:
         with st.spinner("Processing text input..."):
             results = process_text_input(requirements)
             st.success("Text input processed successfully!")
-            st.write(results)
+            df = pd.DataFrame(results['items'],
+                              columns=["product_id", "product_name", "product_price", "quantity", "sub_total"])
 
-            # df = pd.DataFrame(results)
-            #
-            #
-            # total_value = df["sub_total"].sum()
-            #
-            #
-            # st.subheader("Quotation Summary")
-            # st.table(df.style.format({
-            #     "product_price": "{:.2f}",
-            #     "sub_total": "{:.2f}"
-            # }))
-            # st.markdown(f"**TOTAL: ₹{total_value:.2f}**")
+
+
+            total_value = df["sub_total"].sum()
+
+
+            st.subheader("Quotation Summary")
+            st.table(df.style.format({
+                "product_price": "{:.2f}",
+                "sub_total": "{:.2f}"
+            }))
+            st.markdown(f"**TOTAL: ₹{total_value:.2f}**")
 
     elif file_button_pressed and uploaded_file:
         with st.spinner("Processing uploaded file..."):
             results = process_file_upload(uploaded_file)
             st.success("File uploaded and processed successfully!")
-            st.write(results)
-            # df = pd.DataFrame(results)
-            #
-            # total_value = df["sub_total"].sum()
-            #
-            # st.subheader("Quotation Summary")
-            # st.table(df.style.format({
-            #     "product_price": "{:.2f}",
-            #     "sub_total": "{:.2f}"
-            # }))
-            # st.markdown(f"**TOTAL: ₹{total_value:.2f}**")
+            df = pd.DataFrame(results['items'], columns=["product_id", "product_name", "product_price", "quantity", "sub_total"])
+            total_value = df["sub_total"].sum()
+
+            st.subheader("Quotation Summary")
+            st.table(df.style.format({
+                "product_price": "{:.2f}",
+                "sub_total": "{:.2f}"
+            }))
+            st.markdown(f"**TOTAL: ₹{total_value:.2f}**")
 
     elif text_button_pressed and not requirements:
         st.warning("Please enter some requirements to process.")
