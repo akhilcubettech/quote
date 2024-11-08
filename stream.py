@@ -4,25 +4,41 @@ import boto3
 import streamlit as st
 from agent.workflow_manager import WorkflowManager
 import pandas as pd
-
+import openai as client
+import base64
 
 agent= WorkflowManager()
 
 def process_text_input(req: str):
-    res = agent.run_text(req)
-    return res['items']
+    # res = agent.run_text(req)
+    return req
 
 
 def process_file_upload(file):
-    textract_client = boto3.client('textract', region_name=os.getenv("AWS_REGION"))
-    response = textract_client.detect_document_text(Document={'Bytes': file.read()})
-    extracted_text = []
-    for item in response['Blocks']:
-        if item['BlockType'] == 'LINE':
-            extracted_text.append(item['Text'])
-    req = "\n".join(extracted_text)
-    res = agent.run_text(req)
-    return res['items']
+    base64_image = base64.b64encode(file.read()).decode('utf-8')
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Extract the requirements in the image, output only the list of requirements",
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{base64_image}"
+                        },
+                    },
+                ],
+            }
+        ],
+    )
+    print(response.choices[0].message.content)
+    # res = agent.run_text(response)
+    return response.choices[0].message.content
 
 
 st.title("Quote Generator")
@@ -49,35 +65,36 @@ with results_container:
         with st.spinner("Processing text input..."):
             results = process_text_input(requirements)
             st.success("Text input processed successfully!")
+            st.write(results)
 
-
-            df = pd.DataFrame(results)
-
-
-            total_value = df["sub_total"].sum()
-
-
-            st.subheader("Quotation Summary")
-            st.table(df.style.format({
-                "product_price": "{:.2f}",
-                "sub_total": "{:.2f}"
-            }))
-            st.markdown(f"**TOTAL: ₹{total_value:.2f}**")
+            # df = pd.DataFrame(results)
+            #
+            #
+            # total_value = df["sub_total"].sum()
+            #
+            #
+            # st.subheader("Quotation Summary")
+            # st.table(df.style.format({
+            #     "product_price": "{:.2f}",
+            #     "sub_total": "{:.2f}"
+            # }))
+            # st.markdown(f"**TOTAL: ₹{total_value:.2f}**")
 
     elif file_button_pressed and uploaded_file:
         with st.spinner("Processing uploaded file..."):
             results = process_file_upload(uploaded_file)
             st.success("File uploaded and processed successfully!")
-            df = pd.DataFrame(results)
-
-            total_value = df["sub_total"].sum()
-
-            st.subheader("Quotation Summary")
-            st.table(df.style.format({
-                "product_price": "{:.2f}",
-                "sub_total": "{:.2f}"
-            }))
-            st.markdown(f"**TOTAL: ₹{total_value:.2f}**")
+            st.write(results)
+            # df = pd.DataFrame(results)
+            #
+            # total_value = df["sub_total"].sum()
+            #
+            # st.subheader("Quotation Summary")
+            # st.table(df.style.format({
+            #     "product_price": "{:.2f}",
+            #     "sub_total": "{:.2f}"
+            # }))
+            # st.markdown(f"**TOTAL: ₹{total_value:.2f}**")
 
     elif text_button_pressed and not requirements:
         st.warning("Please enter some requirements to process.")
